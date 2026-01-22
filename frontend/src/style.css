@@ -22,6 +22,7 @@
   /* Gradients */
   --gradient-primary: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
   --gradient-card: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
+  --gradient-danger: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   
   /* Spacing */
   --spacing-xs: 0.5rem;
@@ -40,6 +41,7 @@
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
   --shadow-glow: 0 0 20px rgba(139, 92, 246, 0.3);
+  --shadow-glow-danger: 0 0 20px rgba(239, 68, 68, 0.3);
 }
 
 body {

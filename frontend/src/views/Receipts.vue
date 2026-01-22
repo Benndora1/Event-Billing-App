@@ -229,7 +229,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onActivated } from 'vue'
 import { useAppStore } from '../stores/appStore'
 
 export default {
@@ -255,6 +255,11 @@ export default {
     })
 
     onMounted(() => {
+      store.fetchReceipts()
+      store.fetchClients() // Fetch clients for dropdown
+    })
+
+    onActivated(() => {
       store.fetchReceipts()
       store.fetchClients() // Fetch clients for dropdown
     })
