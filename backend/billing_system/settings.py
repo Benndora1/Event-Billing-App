@@ -19,8 +19,7 @@ INSTALLED_APPS = [
     # Third-party
     'rest_framework',
     'corsheaders',
-
-    # Local
+    'drf_yasg',  # Add drf-yasg for Swagger
     'api',
 ]
 
