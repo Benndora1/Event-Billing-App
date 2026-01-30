@@ -1,21 +1,21 @@
 <template>
   <div>
     <div class="page-header">
-      <h2>Receipts</h2>
-      <p>Create and manage payment receipts</p>
+      <h2>Quotations</h2>
+      <p>Create and manage event quotations</p>
     </div>
 
     <div class="card">
       <div class="card-header">
-        <h3>Receipt List</h3>
-        <button @click="openCreateModal" class="btn btn-primary">+ Create Receipt</button>
+        <h3>Quotation List</h3>
+        <button @click="openCreateModal" class="btn btn-primary">+ Create Quotation</button>
       </div>
 
-      <div v-if="loading" class="loading">Loading receipts...</div>
+      <div v-if="loading" class="loading">Loading quotations...</div>
 
-      <div v-else-if="receipts.length === 0" class="empty-state">
-        <div class="empty-state-icon">🧾</div>
-        <p>No receipts yet. Create your first receipt!</p>
+      <div v-else-if="quotations.length === 0" class="empty-state">
+        <div class="empty-state-icon">📝</div>
+        <p>No quotations yet. Create your first quotation!</p>
       </div>
 
       <div v-else class="table-container">
@@ -25,7 +25,7 @@
               <th>Number</th>
               <th>Client</th>
               <th>Date</th>
-              <th>Payment Method</th>
+              <th>Valid Until</th>
               <th>Total</th>
               <th>Status</th>
             </tr>
@@ -33,22 +33,22 @@
 
           <tbody>
             <tr 
-              v-for="receipt in receipts" 
-              :key="receipt.id"
-              :class="{ 'active-row': editingReceipt?.id === receipt.id }"
-              @click="openEditModal(receipt)"
-              @mouseenter="showActions(receipt.id)"
+              v-for="quotation in quotations" 
+              :key="quotation.id"
+              :class="{ 'active-row': editingQuotation?.id === quotation.id }"
+              @click="openEditModal(quotation)"
+              @mouseenter="showActions(quotation.id)"
               @mouseleave="hideActions"
               class="clickable-row"
             >
-              <td><strong>{{ receipt.receipt_number }}</strong></td>
-              <td>{{ receipt.client_name }}</td>
-              <td>{{ receipt.receipt_date }}</td>
-              <td>{{ receipt.payment_method }}</td>
-              <td><strong>${{ receipt.total }}</strong></td>
+              <td><strong>{{ quotation.quotation_number }}</strong></td>
+              <td>{{ quotation.client_name }}</td>
+              <td>{{ quotation.date }}</td>
+              <td>{{ quotation.valid_until }}</td>
+              <td><strong>${{ quotation.total }}</strong></td>
               <td>
-                <span :class="['badge', `badge-${getStatusBadge(receipt.status)}`]">
-                  {{ receipt.status }}
+                <span :class="['badge', `badge-${getStatusBadge(quotation.status)}`]">
+                  {{ quotation.status }}
                 </span>
               </td>
               <td>
@@ -58,7 +58,7 @@
                     <i class="fas fa-edit"></i>
                   </div>
                   <button 
-                    @click.stop="openEditModal(receipt)" 
+                    @click.stop="openEditModal(quotation)" 
                     class="action-btn" 
                     title="Edit"
                   >
@@ -68,7 +68,7 @@
                     <i class="fas fa-envelope"></i>
                   </div>
                   <button 
-                    @click.stop="sendEmail(receipt.id)" 
+                    @click.stop="sendEmail(quotation.id)" 
                     class="action-btn" 
                     title="Send Email"
                   >
@@ -78,7 +78,7 @@
                     <i class="fas fa-trash"></i>
                   </div>
                   <button 
-                    @click.stop="deleteReceipt(receipt.id)" 
+                    @click.stop="deleteQuotation(quotation.id)" 
                     class="action-btn delete-btn" 
                     title="Delete"
                   >
@@ -92,25 +92,25 @@
       </div>
     </div>
 
-    <!-- Custom Add Receipt Modal -->
+    <!-- Custom Add Quotation Modal -->
     <div v-if="showAddModal" class="custom-modal-overlay" @click.self="closeAddModal">
       <div class="custom-modal">
         <div class="modal-header">
-          <h3>Create New Receipt</h3>
+          <h3>Create New Quotation</h3>
           <button class="close-btn" @click="closeAddModal">
             <i class="fas fa-times"></i>
           </button>
         </div>
         
-        <form @submit.prevent="handleAddReceipt" class="add-receipt-form">
+        <form @submit.prevent="handleAddQuotation" class="add-quotation-form">
           <div class="form-section">
-            <h4>Receipt Details</h4>
+            <h4>Quotation Details</h4>
             <div class="form-grid">
               <div class="form-group">
                 <label for="client">Client *</label>
                 <select
                   id="client"
-                  v-model="newReceipt.client_id"
+                  v-model="newQuotation.client_id"
                   required
                   class="form-input"
                 >
@@ -122,38 +122,33 @@
               </div>
               
               <div class="form-group">
-                <label for="payment_method">Payment Method *</label>
-                <select
-                  id="payment_method"
-                  v-model="newReceipt.payment_method"
-                  required
-                  class="form-input"
-                >
-                  <option value="">Select payment method</option>
-                  <option value="cash">Cash</option>
-                  <option value="card">Credit Card</option>
-                  <option value="bank_transfer">Bank Transfer</option>
-                  <option value="check">Check</option>
-                </select>
-              </div>
-              
-              <div class="form-group">
-                <label for="receipt_date">Receipt Date *</label>
+                <label for="valid_until">Valid Until *</label>
                 <input
-                  id="receipt_date"
-                  v-model="newReceipt.receipt_date"
+                  id="valid_until"
+                  v-model="newQuotation.valid_until"
                   type="date"
                   required
                   class="form-input"
                 />
               </div>
             </div>
+            
+            <div class="form-group full-width">
+              <label for="terms">Terms</label>
+              <textarea
+                id="terms"
+                v-model="newQuotation.terms"
+                placeholder="Payment terms and conditions..."
+                class="form-input"
+                rows="3"
+              ></textarea>
+            </div>
           </div>
           
           <div class="form-section">
             <h4>Items</h4>
             <div class="items-section">
-              <div v-for="(item, index) in newReceipt.items" :key="index" class="item-row">
+              <div v-for="(item, index) in newQuotation.items" :key="index" class="item-row">
                 <div class="form-group">
                   <label>Item Description *</label>
                   <input
@@ -201,7 +196,7 @@
                 </div>
                 
                 <button
-                  v-if="newReceipt.items.length > 1"
+                  v-if="newQuotation.items.length > 1"
                   type="button"
                   @click="removeItem(index)"
                   class="btn btn-danger btn-sm"
@@ -225,33 +220,32 @@
               Cancel
             </button>
             <button type="submit" class="btn btn-primary" :disabled="loading">
-              {{ loading ? 'Creating...' : 'Create Receipt' }}
+              {{ loading ? 'Creating...' : 'Create Quotation' }}
             </button>
           </div>
         </form>
       </div>
     </div>
-  </div>
 </template>
 
 <script>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onActivated } from 'vue'
 import { useAppStore } from '../stores/appStore'
 
 export default {
-  name: 'Receipts',
+  name: 'Quotations',
   setup() {
     const store = useAppStore()
 
     const showModal = ref(false)
-    const editingReceipt = ref(null)
+    const editingQuotation = ref(null)
     const activeActionsId = ref(null)
     const showAddModal = ref(false)
     const showEditModal = ref(false)
-    const newReceipt = ref({
+    const newQuotation = ref({
       client_id: '',
-      payment_method: '',
-      receipt_date: '',
+      valid_until: '',
+      terms: '',
       items: [{
         description: '',
         quantity: 1,
@@ -260,33 +254,38 @@ export default {
       }]
     })
 
-    // Store is initialized globally in App.vue
-    // No need to initialize here
+    onMounted(() => {
+      store.initializeStore();
+    })
+
+    onActivated(() => {
+      store.initializeStore();
+    })
 
     const openCreateModal = () => {
       showAddModal.value = true
     }
 
-    const openEditModal = (receipt) => {
-      editingReceipt.value = receipt
+    const openEditModal = (quotation) => {
+      editingQuotation.value = quotation
       showEditModal.value = true
     }
 
     const closeAddModal = () => {
       showAddModal.value = false
-      resetNewReceipt()
+      resetNewQuotation()
     }
 
     const closeEditModal = () => {
       showEditModal.value = false
-      editingReceipt.value = null
+      editingQuotation.value = null
     }
 
-    const resetNewReceipt = () => {
-      newReceipt.value = {
+    const resetNewQuotation = () => {
+      newQuotation.value = {
         client_id: '',
-        payment_method: '',
-        receipt_date: '',
+        valid_until: '',
+        terms: '',
         items: [{
           description: '',
           quantity: 1,
@@ -297,7 +296,7 @@ export default {
     }
 
     const addItem = () => {
-      newReceipt.value.items.push({
+      newQuotation.value.items.push({
         description: '',
         quantity: 1,
         unit_price: 0,
@@ -306,26 +305,26 @@ export default {
     }
 
     const removeItem = (index) => {
-      newReceipt.value.items.splice(index, 1)
+      newQuotation.value.items.splice(index, 1)
     }
 
-    const handleAddReceipt = async () => {
+    const handleAddQuotation = async () => {
       try {
-        await store.createReceipt(newReceipt.value)
+        await store.createQuotation(newQuotation.value)
         closeAddModal()
-        store.refreshReceipts()
+        store.refreshQuotations() // Refresh list
       } catch (error) {
-        alert('Error creating receipt')
+        alert('Error creating quotation')
       }
     }
 
-    const handleEditReceipt = async () => {
+    const handleEditQuotation = async () => {
       try {
-        await store.updateReceipt(editingReceipt.value.id, editingReceipt.value)
+        await store.updateQuotation(editingQuotation.value.id, editingQuotation.value)
         closeEditModal()
-        store.refreshReceipts()
+        store.refreshQuotations() // Refresh list
       } catch (error) {
-        alert('Error updating receipt')
+        alert('Error updating quotation')
       }
     }
 
@@ -337,44 +336,46 @@ export default {
       activeActionsId.value = null
     }
 
-    const handleReceiptSaved = () => {
+    const handleQuotationSaved = () => {
       closeModal()
-      store.refreshReceipts()
+      store.refreshQuotations() // Refresh the list
     }
 
     const sendEmail = async (id) => {
-      if (!confirm('Send receipt via email?')) return
+      if (!confirm('Send quotation via email?')) return
 
       try {
-        await store.sendReceiptEmail(id)
-        alert('Receipt sent successfully!')
+        await store.sendQuotationEmail(id)
+        alert('Quotation sent successfully!')
       } catch (error) {
-        alert('Error sending receipt')
+        alert('Error sending quotation')
       }
     }
 
-    const deleteReceipt = async (id) => {
-      if (!confirm('Are you sure you want to delete this receipt?')) return
+    const deleteQuotation = async (id) => {
+      if (!confirm('Are you sure you want to delete this quotation?')) return
 
       try {
-        await store.deleteReceipt(id)
+        await store.deleteQuotation(id)
       } catch (error) {
-        alert('Error deleting receipt')
+        alert('Error deleting quotation')
       }
     }
 
     const closeModal = () => {
       showModal.value = false
-      editingReceipt.value = null
+      editingQuotation.value = null
     }
 
     const getStatusBadge = (status) => {
       switch (status.toLowerCase()) {
-        case 'pending':
+        case 'draft':
           return 'warning'
-        case 'paid':
+        case 'sent':
+          return 'info'
+        case 'accepted':
           return 'success'
-        case 'cancelled':
+        case 'rejected':
           return 'danger'
         default:
           return 'secondary'
@@ -382,26 +383,25 @@ export default {
     }
 
     return {
-      receipts: computed(() => store.receipts),
+      quotations: computed(() => store.quotations),
       clients: computed(() => store.clients),
       loading: computed(() => store.loading),
-      editingReceipt,
+      editingQuotation,
       showAddModal,
       showEditModal,
-      newReceipt,
+      newQuotation,
       openCreateModal,
       openEditModal,
       closeAddModal,
       closeEditModal,
-      handleAddReceipt,
-      handleEditReceipt,
+      handleAddQuotation,
+      handleEditQuotation,
       sendEmail,
-      deleteReceipt,
+      deleteQuotation,
       showActions,
       hideActions,
       addItem,
       removeItem,
-      getStatusBadge,
     }
   },
 }
@@ -414,61 +414,54 @@ export default {
 }
 
 .clickable-row:hover {
-  background-color: rgba(16, 185, 129, 0.1);
+  background-color: rgba(59, 130, 246, 0.1);
 }
 
 .active-row {
-  background-color: rgba(16, 185, 129, 0.2) !important;
-  border-left: 3px solid #10b981;
+  background-color: rgba(59, 130, 246, 0.2) !important;
+  border-left: 3px solid #3b82f6;
 }
 
 .active-row:hover {
-  background-color: rgba(16, 185, 129, 0.3) !important;
+  background-color: rgba(59, 130, 246, 0.3) !important;
 }
 
-.actions-container {
-  position: absolute;
-  top: 50%;
-  right: 10px;
-  transform: translateY(-50%);
-  background: rgba(0, 0, 0, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  padding: 0.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
-  z-index: 1000;
-  opacity: 0;
-  transition: all 0.2s ease;
-  pointer-events: none;
-}
-
-.actions-container.show {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.action-btn {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
-  color: rgba(255, 255, 255, 0.8);
-  cursor: pointer;
+.badge {
   padding: 0.25rem 0.5rem;
-  font-size: 0.875rem;
-  transition: all 0.2s ease;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
 }
 
-.delete-btn {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.2);
+.badge-warning {
+  background: rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
-.delete-btn:hover {
+.badge-info {
+  background: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.badge-success {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.badge-danger {
   background: rgba(239, 68, 68, 0.2);
-  color: white;
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.badge-secondary {
+  background: rgba(107, 114, 128, 0.2);
+  color: #6b7280;
+  border: 1px solid rgba(107, 114, 128, 0.3);
 }
 
 /* Custom Modal Styles */
@@ -492,7 +485,7 @@ export default {
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-  max-width: 600px;
+  max-width: 800px;
   width: 100%;
   max-height: 90vh;
   overflow: hidden;
@@ -534,10 +527,23 @@ export default {
   color: var(--text-primary);
 }
 
-.add-receipt-form {
+.add-quotation-form {
   padding: 1.5rem;
   overflow-y: auto;
   flex: 1;
+}
+
+.form-section {
+  margin-bottom: 1.5rem;
+}
+
+.form-section h4 {
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .form-grid {
@@ -582,6 +588,31 @@ export default {
   color: var(--text-secondary);
 }
 
+.form-input.readonly {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+}
+
+.items-section {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.item-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr auto;
+  gap: 1rem;
+  align-items: end;
+  padding: 1rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.item-row:last-child {
+  border-bottom: none;
+}
+
 .form-actions {
   display: flex;
   gap: 1rem;
@@ -590,14 +621,30 @@ export default {
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.btn-sm {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+.btn-danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: white;
+}
+
+.btn-danger:hover {
+  background: rgba(239, 68, 68, 0.8);
+  border-color: rgba(239, 68, 68, 0.8);
+}
+
 @keyframes modalSlideIn {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: scale(0.9) translateY(-20px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: scale(1) translateY(0);
   }
 }
 </style>

@@ -235,7 +235,7 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onActivated } from 'vue'
 import { useAppStore } from '../stores/appStore'
 
 export default {
@@ -260,8 +260,13 @@ export default {
       }]
     })
 
-    // Store is initialized globally in App.vue
-    // No need to initialize here
+    onMounted(() => {
+      store.initializeStore();
+    })
+
+    onActivated(() => {
+      store.initializeStore();
+    })
 
     const openCreateModal = () => {
       showAddModal.value = true
@@ -313,7 +318,7 @@ export default {
       try {
         await store.createReceipt(newReceipt.value)
         closeAddModal()
-        store.refreshReceipts()
+        store.refreshReceipts() // Refresh list
       } catch (error) {
         alert('Error creating receipt')
       }
@@ -323,7 +328,7 @@ export default {
       try {
         await store.updateReceipt(editingReceipt.value.id, editingReceipt.value)
         closeEditModal()
-        store.refreshReceipts()
+        store.refreshReceipts() // Refresh list
       } catch (error) {
         alert('Error updating receipt')
       }
@@ -339,7 +344,7 @@ export default {
 
     const handleReceiptSaved = () => {
       closeModal()
-      store.refreshReceipts()
+      store.refreshReceipts() // Refresh the list
     }
 
     const sendEmail = async (id) => {
@@ -401,7 +406,6 @@ export default {
       hideActions,
       addItem,
       removeItem,
-      getStatusBadge,
     }
   },
 }
@@ -471,6 +475,38 @@ export default {
   color: white;
 }
 
+.badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.badge-warning {
+  background: rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.badge-success {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.badge-danger {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.badge-secondary {
+  background: rgba(107, 114, 128, 0.2);
+  color: #6b7280;
+  border: 1px solid rgba(107, 114, 128, 0.3);
+}
+
 /* Custom Modal Styles */
 .custom-modal-overlay {
   position: fixed;
@@ -492,7 +528,7 @@ export default {
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-  max-width: 600px;
+  max-width: 800px;
   width: 100%;
   max-height: 90vh;
   overflow: hidden;
@@ -540,6 +576,19 @@ export default {
   flex: 1;
 }
 
+.form-section {
+  margin-bottom: 1.5rem;
+}
+
+.form-section h4 {
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -582,6 +631,31 @@ export default {
   color: var(--text-secondary);
 }
 
+.form-input.readonly {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+}
+
+.items-section {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.item-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr auto;
+  gap: 1rem;
+  align-items: end;
+  padding: 1rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.item-row:last-child {
+  border-bottom: none;
+}
+
 .form-actions {
   display: flex;
   gap: 1rem;
@@ -590,14 +664,30 @@ export default {
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.btn-sm {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+.btn-danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: white;
+}
+
+.btn-danger:hover {
+  background: rgba(239, 68, 68, 0.8);
+  border-color: rgba(239, 68, 68, 0.8);
+}
+
 @keyframes modalSlideIn {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: scale(0.9) translateY(-20px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: scale(1) translateY(0);
   }
 }
 </style>

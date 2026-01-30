@@ -226,12 +226,11 @@
         </form>
       </div>
     </div>
-
-    </div>
+  </div>
 </template>
 
 <script>
-import { ref, computed, onMounted, onActivated } from 'vue'
+import { ref, computed } from 'vue'
 import { useAppStore } from '../stores/appStore'
 
 export default {
@@ -256,15 +255,8 @@ export default {
       }]
     })
 
-    onMounted(() => {
-      store.fetchQuotations()
-      store.fetchClients() // Fetch clients for dropdown
-    })
-
-    onActivated(() => {
-      store.fetchQuotations()
-      store.fetchClients() // Fetch clients for dropdown
-    })
+    // Store is initialized globally in App.vue
+    // No need to initialize here
 
     const openCreateModal = () => {
       showAddModal.value = true
@@ -314,9 +306,9 @@ export default {
 
     const handleAddQuotation = async () => {
       try {
-        await store.addQuotation(newQuotation.value)
+        await store.createQuotation(newQuotation.value)
         closeAddModal()
-        store.fetchQuotations() // Refresh list
+        store.refreshQuotations()
       } catch (error) {
         alert('Error creating quotation')
       }
@@ -326,7 +318,7 @@ export default {
       try {
         await store.updateQuotation(editingQuotation.value.id, editingQuotation.value)
         closeEditModal()
-        store.fetchQuotations() // Refresh list
+        store.refreshQuotations()
       } catch (error) {
         alert('Error updating quotation')
       }
@@ -342,7 +334,7 @@ export default {
 
     const handleQuotationSaved = () => {
       closeModal()
-      store.fetchQuotations() // Refresh the list
+      store.refreshQuotations()
     }
 
     const sendEmail = async (id) => {
@@ -406,6 +398,7 @@ export default {
       hideActions,
       addItem,
       removeItem,
+      getStatusBadge,
     }
   },
 }
@@ -468,6 +461,51 @@ export default {
   border: 1px solid rgba(107, 114, 128, 0.3);
 }
 
+.actions-container {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  opacity: 0;
+  transition: all 0.2s ease;
+  pointer-events: none;
+}
+
+.actions-container.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.action-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.delete-btn {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.delete-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: white;
+}
+
 /* Custom Modal Styles */
 .custom-modal-overlay {
   position: fixed;
@@ -489,7 +527,7 @@ export default {
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-  max-width: 800px;
+  max-width: 600px;
   width: 100%;
   max-height: 90vh;
   overflow: hidden;
@@ -537,19 +575,6 @@ export default {
   flex: 1;
 }
 
-.form-section {
-  margin-bottom: 1.5rem;
-}
-
-.form-section h4 {
-  color: var(--text-primary);
-  font-size: 1rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -592,31 +617,6 @@ export default {
   color: var(--text-secondary);
 }
 
-.form-input.readonly {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-secondary);
-}
-
-.items-section {
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 1rem;
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.item-row {
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr auto;
-  gap: 1rem;
-  align-items: end;
-  padding: 1rem 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.item-row:last-child {
-  border-bottom: none;
-}
-
 .form-actions {
   display: flex;
   gap: 1rem;
@@ -625,30 +625,14 @@ export default {
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.btn-sm {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.75rem;
-}
-
-.btn-danger {
-  background: var(--danger);
-  border-color: var(--danger);
-  color: white;
-}
-
-.btn-danger:hover {
-  background: rgba(239, 68, 68, 0.8);
-  border-color: rgba(239, 68, 68, 0.8);
-}
-
 @keyframes modalSlideIn {
   from {
     opacity: 0;
-    transform: scale(0.9) translateY(-20px);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
-    transform: scale(1) translateY(0);
+    transform: translateY(0);
   }
 }
 </style>

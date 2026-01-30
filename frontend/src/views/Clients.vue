@@ -268,13 +268,8 @@ export default {
       address: ''
     })
 
-    onMounted(() => {
-      store.fetchClients()
-    })
-
-    onActivated(() => {
-      store.fetchClients()
-    })
+    // Store is initialized globally in App.vue
+    // No need to initialize here
 
     const openCreateModal = () => {
       showAddModal.value = true
@@ -307,11 +302,12 @@ export default {
 
     const handleAddClient = async () => {
       try {
-        await store.addClient(newClient.value)
+        await store.createClient(newClient.value)
         closeAddModal()
-        store.fetchClients() // Refresh list
+        store.refreshClients() // Refresh list
       } catch (error) {
-        alert('Error adding client')
+        console.error('Client creation failed:', error.message);
+        alert(error.message || 'Error adding client');
       }
     }
 
@@ -319,7 +315,7 @@ export default {
       try {
         await store.updateClient(editingClient.value.id, editingClient.value)
         closeEditModal()
-        store.fetchClients() // Refresh list
+        store.refreshClients() // Refresh list
       } catch (error) {
         alert('Error updating client')
       }
@@ -345,7 +341,7 @@ export default {
 
     const handleClientSaved = () => {
       closeModal()
-      store.fetchClients() // Refresh the list
+      store.refreshClients() // Refresh the list
     }
 
     const closeModal = () => {

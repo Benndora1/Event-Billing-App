@@ -196,19 +196,9 @@ export default {
     const store = useAppStore();
     const chartPeriod = ref('month');
 
-    onMounted(() => {
-      store.fetchClients();
-      store.fetchQuotations();
-      store.fetchReceipts();
-    });
+    // Store is initialized globally in App.vue
+    // No need to initialize here
 
-    onActivated(() => {
-      store.fetchClients();
-      store.fetchQuotations();
-      store.fetchReceipts();
-    });
-
-    // Current date
     const currentDate = computed(() => {
       return new Date().toLocaleDateString('en-US', { 
         weekday: 'long', 

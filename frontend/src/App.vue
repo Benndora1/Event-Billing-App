@@ -47,21 +47,27 @@
 import { setAuthToken } from './services/api';
 import { useAppStore } from './stores/appStore';
 import router from './router';
+import { onMounted } from 'vue';
 
 export default {
   name: 'App',
   setup() {
     const store = useAppStore();
 
+    // Initialize store globally when app starts
+    onMounted(() => {
+      store.initializeStore();
+    });
+
     const handleLogout = () => {
       // Clear token from localStorage and API headers
       setAuthToken(null);
       
-      // Clear store data
-      store.$reset();
+      // Clear store data using proper method
+      store.clearAllData();
       
-      // Redirect to login page
-      router.push('/login');
+      // Redirect to login page (root path)
+      router.push('/');
     };
 
     return {

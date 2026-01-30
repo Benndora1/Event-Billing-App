@@ -20,6 +20,7 @@ export const setAuthToken = (token) => {
         api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     } else {
         localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
         delete api.defaults.headers.common['Authorization'];
     }
 };
@@ -28,6 +29,72 @@ export const setAuthToken = (token) => {
 export const getAuthToken = () => {
     return localStorage.getItem('access_token');
 };
+
+// Helper function to set refresh token
+export const setRefreshToken = (token) => {
+    if (token) {
+        localStorage.setItem('refresh_token', token);
+    } else {
+        localStorage.removeItem('refresh_token');
+    }
+};
+
+// Helper function to get refresh token
+export const getRefreshToken = () => {
+    return localStorage.getItem('refresh_token');
+};
+
+// Token refresh function
+export const refreshToken = async () => {
+    try {
+        const refresh = getRefreshToken();
+        if (!refresh) {
+            throw new Error('No refresh token available');
+        }
+        
+        const response = await authAPI.refreshToken(refresh);
+        const newAccessToken = response.data.access;
+        const newRefreshToken = response.data.refresh;
+        
+        setAuthToken(newAccessToken);
+        if (newRefreshToken) {
+            setRefreshToken(newRefreshToken);
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('Token refresh failed:', error);
+        // Clear tokens on refresh failure
+        setAuthToken(null);
+        return false;
+    }
+};
+
+// Add response interceptor for automatic token refresh
+api.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+        const originalRequest = error.config;
+        
+        // If error is 401 and we haven't tried refreshing yet
+        if (error.response?.status === 401 && !originalRequest._retry) {
+            originalRequest._retry = true;
+            
+            try {
+                const refreshed = await refreshToken();
+                if (refreshed) {
+                    // Retry the original request with new token
+                    return api(originalRequest);
+                }
+            } catch (refreshError) {
+                console.error('Refresh failed:', refreshError);
+                // Will be handled by the router guard
+            }
+        }
+        
+        return Promise.reject(error);
+    }
+);
 
 // Auth API
 export const authAPI = {

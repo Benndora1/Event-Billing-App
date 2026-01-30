@@ -26,7 +26,21 @@
       </div>
       <div class="form-group">
         <label for="password">Password</label>
-        <input v-model="loginForm.password" id="password" type="password" required />
+        <div class="password-input-container">
+          <input 
+            v-model="loginForm.password" 
+            id="password" 
+            :type="showLoginPassword ? 'text' : 'password'" 
+            required 
+          />
+          <button 
+            type="button" 
+            class="password-toggle-btn"
+            @click="showLoginPassword = !showLoginPassword"
+          >
+            <i :class="showLoginPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+          </button>
+        </div>
       </div>
       <button type="submit" class="btn-primary" :disabled="loading">
         {{ loading ? 'Logging in...' : 'Login' }}
@@ -47,16 +61,39 @@
       </div>
       <div class="form-group">
         <label for="reg-password">Password</label>
-        <input v-model="registerForm.password" id="reg-password" type="password" required />
+        <div class="password-input-container">
+          <input 
+            v-model="registerForm.password" 
+            id="reg-password" 
+            :type="showRegPassword ? 'text' : 'password'" 
+            required 
+          />
+          <button 
+            type="button" 
+            class="password-toggle-btn"
+            @click="showRegPassword = !showRegPassword"
+          >
+            <i :class="showRegPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+          </button>
+        </div>
       </div>
       <div class="form-group">
         <label for="reg-confirm-password">Confirm Password</label>
-        <input 
-          v-model="registerForm.confirmPassword" 
-          id="reg-confirm-password" 
-          type="password" 
-          required 
-        />
+        <div class="password-input-container">
+          <input 
+            v-model="registerForm.confirmPassword" 
+            id="reg-confirm-password" 
+            :type="showRegConfirmPassword ? 'text' : 'password'" 
+            required 
+          />
+          <button 
+            type="button" 
+            class="password-toggle-btn"
+            @click="showRegConfirmPassword = !showRegConfirmPassword"
+          >
+            <i :class="showRegConfirmPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+          </button>
+        </div>
       </div>
       <button type="submit" class="btn-primary" :disabled="loading">
         {{ loading ? 'Creating account...' : 'Register' }}
@@ -78,13 +115,18 @@
 <script setup>
 import { ref } from 'vue'
 import router from '../router'
-import { authAPI, setAuthToken } from '../services/api'
+import { authAPI, setAuthToken, setRefreshToken } from '../services/api'
 
 const isLogin = ref(true)
 const loading = ref(false)
 const loginError = ref('')
 const registerError = ref('')
 const registerSuccess = ref('')
+
+// Password visibility states
+const showLoginPassword = ref(false)
+const showRegPassword = ref(false)
+const showRegConfirmPassword = ref(false)
 
 const loginForm = ref({
   username: '',
@@ -107,9 +149,10 @@ const login = async () => {
       username: loginForm.value.username,
       password: loginForm.value.password,
     })
-    const token = response.data.access
-    setAuthToken(token)
-    router.push('/')
+    const { access, refresh } = response.data
+    setAuthToken(access)
+    setRefreshToken(refresh)
+    router.push('/dashboard')
   } catch (e) {
     loginError.value = 'Invalid credentials'
   } finally {
@@ -356,5 +399,41 @@ const register = async () => {
   color: var(--success);
   font-size: 0.875rem;
   line-height: 1.4;
+}
+
+/* Password input container styles */
+.password-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-container input {
+  padding-right: 3rem;
+  width: 100%;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.password-toggle-btn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.password-toggle-btn i {
+  font-size: 0.875rem;
 }
 </style>
