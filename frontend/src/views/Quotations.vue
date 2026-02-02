@@ -1,14 +1,20 @@
 <template>
   <div>
     <div class="page-header">
-      <h2>Quotations</h2>
-      <p>Create and manage event quotations</p>
+      <div class="header-content">
+        <div>
+          <h2>Quotations</h2>
+          <p>Create and manage event quotations</p>
+        </div>
+        <button @click="openCreateModal" class="btn btn-primary header-btn">
+          <i class="fas fa-plus"></i> Create Quotation
+        </button>
+      </div>
     </div>
 
     <div class="card">
       <div class="card-header">
         <h3>Quotation List</h3>
-        <button @click="openCreateModal" class="btn btn-primary">+ Create Quotation</button>
       </div>
 
       <div v-if="loading" class="loading">Loading quotations...</div>
@@ -28,6 +34,7 @@
               <th>Valid Until</th>
               <th>Total</th>
               <th>Status</th>
+              <th>Actions</th>
             </tr>
           </thead>
 
@@ -37,8 +44,6 @@
               :key="quotation.id"
               :class="{ 'active-row': editingQuotation?.id === quotation.id }"
               @click="openEditModal(quotation)"
-              @mouseenter="showActions(quotation.id)"
-              @mouseleave="hideActions"
               class="clickable-row"
             >
               <td><strong>{{ quotation.quotation_number }}</strong></td>
@@ -52,37 +57,56 @@
                 </span>
               </td>
               <td>
-                <!-- Action buttons container for hover -->
-                <div class="actions-container">
-                  <div class="icon edit-icon">
-                    <i class="fas fa-edit"></i>
-                  </div>
+                <!-- Action buttons in table cell -->
+                <div class="table-actions">
+                  <button 
+                    @click.stop="openViewModal(quotation)" 
+                    class="action-btn view-btn" 
+                    title="View Details"
+                  >
+                    <i class="fas fa-eye"></i>
+                  </button>
                   <button 
                     @click.stop="openEditModal(quotation)" 
-                    class="action-btn" 
+                    class="action-btn edit-btn" 
                     title="Edit"
                   >
-                    <span class="btn-text">Edit</span>
+                    <i class="fas fa-edit"></i>
                   </button>
-                  <div class="icon send-icon">
-                    <i class="fas fa-envelope"></i>
-                  </div>
+                  <button 
+                    @click.stop="printQuotationDirect(quotation)" 
+                    class="action-btn print-btn" 
+                    title="Print"
+                  >
+                    <i class="fas fa-print"></i>
+                  </button>
                   <button 
                     @click.stop="sendEmail(quotation.id)" 
-                    class="action-btn" 
+                    class="action-btn email-btn" 
                     title="Send Email"
                   >
-                    <span class="btn-text">Send Email</span>
+                    <i class="fas fa-envelope"></i>
                   </button>
-                  <div class="icon delete-icon">
-                    <i class="fas fa-trash"></i>
-                  </div>
+                  <button 
+                    @click.stop="shareQuotationDirect(quotation)" 
+                    class="action-btn share-btn" 
+                    title="Share"
+                  >
+                    <i class="fas fa-share"></i>
+                  </button>
+                  <button 
+                    @click.stop="exportToPDFDirect(quotation)" 
+                    class="action-btn pdf-btn" 
+                    title="Export PDF"
+                  >
+                    <i class="fas fa-file-pdf"></i>
+                  </button>
                   <button 
                     @click.stop="deleteQuotation(quotation.id)" 
                     class="action-btn delete-btn" 
                     title="Delete"
                   >
-                    <span class="btn-text">Delete</span>
+                    <i class="fas fa-trash"></i>
                   </button>
                 </div>
               </td>
@@ -226,6 +250,257 @@
         </form>
       </div>
     </div>
+
+    <!-- Edit Quotation Modal -->
+    <div v-if="showEditModal" class="custom-modal-overlay" @click.self="closeEditModal">
+      <div class="custom-modal">
+        <div class="modal-header">
+          <h3>Edit Quotation</h3>
+          <button class="close-btn" @click="closeEditModal">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <form @submit.prevent="handleEditQuotation" class="add-quotation-form">
+          <div class="form-section">
+            <h4>Quotation Details</h4>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="edit-client">Client *</label>
+                <select
+                  id="edit-client"
+                  v-model="editingQuotation.client_id"
+                  required
+                  class="form-input"
+                >
+                  <option value="">Select a client</option>
+                  <option v-for="client in clients" :key="client.id" :value="client.id">
+                    {{ client.name }}{{ client.company ? ` - ${client.company}` : '' }}
+                  </option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label for="edit-valid-until">Valid Until *</label>
+                <input
+                  id="edit-valid-until"
+                  v-model="editingQuotation.valid_until"
+                  type="date"
+                  required
+                  class="form-input"
+                />
+              </div>
+            </div>
+            
+            <div class="form-group full-width">
+              <label for="edit-terms">Terms</label>
+              <textarea
+                id="edit-terms"
+                v-model="editingQuotation.terms"
+                placeholder="Payment terms and conditions..."
+                class="form-input"
+                rows="3"
+              ></textarea>
+            </div>
+          </div>
+          
+          <div class="form-section">
+            <h4>Items</h4>
+            <div class="items-section">
+              <div v-for="(item, index) in editingQuotation.items" :key="index" class="item-row">
+                <div class="form-group">
+                  <label>Item Description *</label>
+                  <input
+                    v-model="item.description"
+                    type="text"
+                    required
+                    placeholder="Item description"
+                    class="form-input"
+                  />
+                </div>
+                
+                <div class="form-group">
+                  <label>Quantity *</label>
+                  <input
+                    v-model="item.quantity"
+                    type="number"
+                    required
+                    min="1"
+                    placeholder="1"
+                    class="form-input"
+                  />
+                </div>
+                
+                <div class="form-group">
+                  <label>Unit Price *</label>
+                  <input
+                    v-model="item.unit_price"
+                    type="number"
+                    required
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    class="form-input"
+                  />
+                </div>
+                
+                <div class="form-group">
+                  <label>Total</label>
+                  <input
+                    :value="(item.quantity * item.unit_price).toFixed(2)"
+                    type="text"
+                    readonly
+                    class="form-input readonly"
+                  />
+                </div>
+                
+                <button
+                  v-if="editingQuotation.items.length > 1"
+                  type="button"
+                  @click="removeEditItem(index)"
+                  class="btn btn-danger btn-sm"
+                >
+                  <i class="fas fa-trash"></i> Remove
+                </button>
+              </div>
+              
+              <button
+                type="button"
+                @click="addEditItem"
+                class="btn btn-secondary"
+              >
+                <i class="fas fa-plus"></i> Add Item
+              </button>
+            </div>
+          </div>
+          
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" @click="closeEditModal">
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary" :disabled="loading">
+              {{ loading ? 'Updating...' : 'Update Quotation' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- View Quotation Modal -->
+    <div v-if="showViewModal" class="view-modal-overlay" @click.self="closeViewModal">
+      <div class="view-modal">
+        <div class="modal-header">
+          <div class="header-content">
+            <h3>Quotation #{{ viewQuotation?.quotation_number }}</h3>
+            <span :class="['badge', `badge-${getStatusBadge(viewQuotation?.status)}`]">
+              {{ viewQuotation?.status }}
+            </span>
+          </div>
+          <button class="close-btn" @click="closeViewModal">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <div class="quotation-details">
+          <!-- Client Information -->
+          <div class="detail-section">
+            <h4><i class="fas fa-user"></i> Client Information</h4>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <label>Name:</label>
+                <span>{{ viewQuotation?.client_name }}</span>
+              </div>
+              <div class="detail-item">
+                <label>Email:</label>
+                <span>{{ viewQuotation?.client_email || 'N/A' }}</span>
+              </div>
+              <div class="detail-item">
+                <label>Phone:</label>
+                <span>{{ viewQuotation?.client_phone || 'N/A' }}</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Quotation Details -->
+          <div class="detail-section">
+            <h4><i class="fas fa-file-invoice"></i> Quotation Details</h4>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <label>Date:</label>
+                <span>{{ viewQuotation?.date }}</span>
+              </div>
+              <div class="detail-item">
+                <label>Valid Until:</label>
+                <span>{{ viewQuotation?.valid_until }}</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Items Breakdown -->
+          <div class="detail-section">
+            <h4><i class="fas fa-list"></i> Items</h4>
+            <div class="items-table-container">
+              <table class="items-table">
+                <thead>
+                  <tr>
+                    <th>Description</th>
+                    <th>Quantity</th>
+                    <th>Unit Price</th>
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(item, index) in viewQuotation?.items" :key="index">
+                    <td>{{ item.description }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>${{ item.unit_price }}</td>
+                    <td>${{ (item.quantity * item.unit_price).toFixed(2) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <!-- Terms & Conditions -->
+          <div class="detail-section" v-if="viewQuotation?.terms">
+            <h4><i class="fas fa-file-contract"></i> Terms & Conditions</h4>
+            <div class="terms-content">
+              {{ viewQuotation.terms }}
+            </div>
+          </div>
+          
+          <!-- Total Summary -->
+          <div class="detail-section total-section">
+            <div class="total-row">
+              <span class="total-label">Total Amount:</span>
+              <span class="total-amount">${{ viewQuotation?.total }}</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="modal-actions">
+          <button @click="openEditModal(viewQuotation)" class="btn btn-primary">
+            <i class="fas fa-edit"></i> Edit
+          </button>
+          <button @click="sendEmail(viewQuotation.id)" class="btn btn-secondary">
+            <i class="fas fa-envelope"></i> Send Email
+          </button>
+          <button @click="printQuotation" class="btn btn-outline">
+            <i class="fas fa-print"></i> Print
+          </button>
+          <button @click="exportToPDF" class="btn btn-outline">
+            <i class="fas fa-file-pdf"></i> Export PDF
+          </button>
+          <button @click="shareQuotation" class="btn btn-outline">
+            <i class="fas fa-share"></i> Share
+          </button>
+          <button @click="closeViewModal" class="btn btn-secondary">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -243,6 +518,8 @@ export default {
     const activeActionsId = ref(null)
     const showAddModal = ref(false)
     const showEditModal = ref(false)
+    const showViewModal = ref(false)
+    const viewQuotation = ref(null)
     const newQuotation = ref({
       client_id: '',
       valid_until: '',
@@ -263,8 +540,19 @@ export default {
     }
 
     const openEditModal = (quotation) => {
-      editingQuotation.value = quotation
+      // Create a deep copy to avoid direct mutation of the original
+      editingQuotation.value = JSON.parse(JSON.stringify(quotation))
       showEditModal.value = true
+    }
+
+    const openViewModal = (quotation) => {
+      viewQuotation.value = quotation
+      showViewModal.value = true
+    }
+
+    const closeViewModal = () => {
+      showViewModal.value = false
+      viewQuotation.value = null
     }
 
     const closeAddModal = () => {
@@ -302,6 +590,23 @@ export default {
 
     const removeItem = (index) => {
       newQuotation.value.items.splice(index, 1)
+    }
+
+    // Edit modal item functions
+    const addEditItem = () => {
+      if (!editingQuotation.value.items) {
+        editingQuotation.value.items = []
+      }
+      editingQuotation.value.items.push({
+        description: '',
+        quantity: 1,
+        unit_price: 0,
+        total: 0
+      })
+    }
+
+    const removeEditItem = (index) => {
+      editingQuotation.value.items.splice(index, 1)
     }
 
     const handleAddQuotation = async () => {
@@ -378,6 +683,152 @@ export default {
       }
     }
 
+    // Phase 3: Advanced Features
+    const printQuotation = () => {
+      if (!viewQuotation.value) return
+      
+      const printWindow = window.open('', '_blank')
+      const quotationContent = generatePrintContent(viewQuotation.value)
+      printWindow.document.write(quotationContent)
+      printWindow.document.close()
+      printWindow.print()
+    }
+
+    // Direct action functions for table hover actions
+    const printQuotationDirect = (quotation) => {
+      const printWindow = window.open('', '_blank')
+      const quotationContent = generatePrintContent(quotation)
+      printWindow.document.write(quotationContent)
+      printWindow.document.close()
+      printWindow.print()
+    }
+
+    const shareQuotationDirect = async (quotation) => {
+      const shareUrl = `${window.location.origin}/quotations/${quotation.id}`
+      
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: `Quotation #${quotation.quotation_number}`,
+            text: `View quotation for ${quotation.client_name}`,
+            url: shareUrl
+          })
+        } catch (error) {
+          console.log('Share cancelled')
+        }
+      } else {
+        try {
+          await navigator.clipboard.writeText(shareUrl)
+          alert('Quotation link copied to clipboard!')
+        } catch (error) {
+          alert('Could not copy link')
+        }
+      }
+    }
+
+    const exportToPDFDirect = async (quotation) => {
+      alert('PDF export feature would be implemented here with a library like jsPDF')
+    }
+
+    const generatePrintContent = (quotation) => {
+      return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Quotation #${quotation.quotation_number}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            .header { text-align: center; margin-bottom: 30px; }
+            .section { margin-bottom: 20px; }
+            .items-table { width: 100%; border-collapse: collapse; }
+            .items-table th, .items-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            .total { font-weight: bold; text-align: right; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Quotation #${quotation.quotation_number}</h1>
+            <p>Date: ${quotation.date} | Valid Until: ${quotation.valid_until}</p>
+          </div>
+          
+          <div class="section">
+            <h3>Client Information</h3>
+            <p><strong>Name:</strong> ${quotation.client_name}</p>
+            <p><strong>Email:</strong> ${quotation.client_email || 'N/A'}</p>
+            <p><strong>Phone:</strong> ${quotation.client_phone || 'N/A'}</p>
+          </div>
+          
+          <div class="section">
+            <h3>Items</h3>
+            <table class="items-table">
+              <thead>
+                <tr>
+                  <th>Description</th>
+                  <th>Quantity</th>
+                  <th>Unit Price</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${quotation.items?.map(item => `
+                  <tr>
+                    <td>${item.description}</td>
+                    <td>${item.quantity}</td>
+                    <td>$${item.unit_price}</td>
+                    <td>$${(item.quantity * item.unit_price).toFixed(2)}</td>
+                  </tr>
+                `).join('') || ''}
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="section">
+            <h3>Terms & Conditions</h3>
+            <p>${quotation.terms || 'No terms specified'}</p>
+          </div>
+          
+          <div class="section total">
+            <h3>Total Amount: $${quotation.total}</h3>
+          </div>
+        </body>
+        </html>
+      `
+    }
+
+    const exportToPDF = async () => {
+      if (!viewQuotation.value) return
+      
+      // For a real implementation, you'd use a library like jsPDF or html2canvas
+      // For now, we'll create a simplified version
+      alert('PDF export feature would be implemented here with a library like jsPDF')
+    }
+
+    const shareQuotation = async () => {
+      if (!viewQuotation.value) return
+      
+      const shareUrl = `${window.location.origin}/quotations/${viewQuotation.value.id}`
+      
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: `Quotation #${viewQuotation.value.quotation_number}`,
+            text: `View quotation for ${viewQuotation.value.client_name}`,
+            url: shareUrl
+          })
+        } catch (error) {
+          console.log('Share cancelled')
+        }
+      } else {
+        // Fallback: copy to clipboard
+        try {
+          await navigator.clipboard.writeText(shareUrl)
+          alert('Quotation link copied to clipboard!')
+        } catch (error) {
+          alert('Could not copy link')
+        }
+      }
+    }
+
     return {
       quotations: computed(() => store.quotations),
       clients: computed(() => store.clients),
@@ -385,11 +836,15 @@ export default {
       editingQuotation,
       showAddModal,
       showEditModal,
+      showViewModal,
+      viewQuotation,
       newQuotation,
       openCreateModal,
       openEditModal,
+      openViewModal,
       closeAddModal,
       closeEditModal,
+      closeViewModal,
       handleAddQuotation,
       handleEditQuotation,
       sendEmail,
@@ -398,7 +853,17 @@ export default {
       hideActions,
       addItem,
       removeItem,
+      addEditItem,
+      removeEditItem,
       getStatusBadge,
+      // Phase 3: Advanced Features
+      printQuotation,
+      exportToPDF,
+      shareQuotation,
+      // Direct action functions for table
+      printQuotationDirect,
+      shareQuotationDirect,
+      exportToPDFDirect,
     }
   },
 }
@@ -504,6 +969,87 @@ export default {
 .delete-btn:hover {
   background: rgba(239, 68, 68, 0.2);
   color: white;
+}
+
+/* Table Actions - Always Visible */
+.table-actions {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.table-actions .action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+  padding: 0;
+}
+
+.table-actions .action-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.table-actions .action-btn i {
+  font-size: 0.875rem;
+}
+
+.table-actions .view-btn:hover {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: #3b82f6;
+}
+
+.table-actions .edit-btn:hover {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #10b981;
+}
+
+.table-actions .print-btn:hover {
+  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.3);
+  color: #8b5cf6;
+}
+
+.table-actions .email-btn:hover {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #f59e0b;
+}
+
+.table-actions .share-btn:hover {
+  background: rgba(6, 182, 212, 0.1);
+  border-color: rgba(6, 182, 212, 0.3);
+  color: #06b6d4;
+}
+
+.table-actions .pdf-btn:hover {
+  background: rgba(220, 38, 38, 0.1);
+  border-color: rgba(220, 38, 38, 0.3);
+  color: #dc2626;
+}
+
+.table-actions .delete-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+
+/* Remove old hover actions since we're using table actions */
+.actions-container {
+  display: none; /* Hide the old hover actions */
 }
 
 /* Custom Modal Styles */
@@ -633,6 +1179,344 @@ export default {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* View Modal Styles */
+.view-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.view-modal {
+  background: var(--bg-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  max-width: 800px;
+  width: 100%;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+.view-modal .modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--bg-tertiary);
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.header-content h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.quotation-details {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.detail-section {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.detail-section h4 {
+  margin: 0 0 1rem 0;
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.detail-section h4 i {
+  color: var(--accent-primary);
+  font-size: 0.875rem;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.detail-item label {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.detail-item span {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.items-table-container {
+  overflow-x: auto;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.items-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-secondary);
+}
+
+.items-table th {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-weight: 600;
+  text-align: left;
+  padding: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.items-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
+.items-table tr:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.terms-content {
+  color: var(--text-primary);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  background: var(--bg-secondary);
+  padding: 1rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.total-section {
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)) !important;
+  border: none !important;
+  color: white !important;
+}
+
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.total-label {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.total-amount {
+  color: white;
+  font-size: 1.5rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: 1rem;
+}
+
+.page-header h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem 0;
+}
+
+.page-header p {
+  color: var(--text-secondary);
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.header-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.header-btn i {
+  font-size: 0.875rem;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--bg-tertiary);
+  flex-wrap: wrap;
+}
+
+.modal-actions .btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  text-decoration: none;
+}
+
+.modal-actions .btn-primary {
+  background: var(--accent-primary);
+  color: white;
+  border-color: var(--accent-primary);
+}
+
+.modal-actions .btn-primary:hover {
+  background: var(--accent-secondary);
+  border-color: var(--accent-secondary);
+  transform: translateY(-1px);
+}
+
+.modal-actions .btn-secondary {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.modal-actions .btn-secondary:hover {
+  background: var(--bg-primary);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.modal-actions .btn-outline {
+  background: transparent;
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.modal-actions .btn-outline:hover {
+  background: var(--bg-secondary);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+/* Responsive Header */
+@media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .header-btn {
+    justify-content: center;
+  }
+  
+  .page-header h2 {
+    font-size: 1.5rem;
+  }
+  
+  .page-header p {
+    font-size: 1rem;
+  }
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .view-modal {
+    width: 95%;
+    margin: 1rem;
+    max-height: 95vh;
+    justify-content: center;
+  }
+  
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .modal-actions {
+    flex-direction: column;
+  }
+  
+  .modal-actions .btn {
+    justify-content: center;
+  }
+  
+  .header-content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .header-btn {
+    justify-content: center;
+  }
+  
+  .page-header h2 {
+    font-size: 1.5rem;
+  }
+  
+  .page-header p {
+    font-size: 1rem;
+  }
+  
+  .items-table-container {
+    font-size: 0.875rem;
+  }
+  
+  .items-table th,
+  .items-table td {
+    padding: 0.5rem;
   }
 }
 </style>
