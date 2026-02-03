@@ -151,6 +151,16 @@
             <div class="compact-items">
               <div v-for="(item, index) in newQuotation.items" :key="index" class="compact-item-row">
                 <div class="item-inputs">
+                  <select
+                    v-model="item.selectedItemId"
+                    @change="updateItemFromList(index)"
+                    class="form-input item-select"
+                  >
+                    <option value="">Select item...</option>
+                    <option v-for="availableItem in items" :key="availableItem.id" :value="availableItem.id">
+                      {{ availableItem.name }} - ${{ availableItem.unit_price }}
+                    </option>
+                  </select>
                   <input
                     v-model="item.description"
                     type="text"
@@ -165,6 +175,7 @@
                     min="1"
                     placeholder="Qty"
                     class="form-input item-qty"
+                    @input="updateItemTotal(index)"
                   />
                   <input
                     v-model="item.unit_price"
@@ -174,6 +185,7 @@
                     step="0.01"
                     placeholder="Price"
                     class="form-input item-price"
+                    @input="updateItemTotal(index)"
                   />
                   <input
                     :value="(item.quantity * item.unit_price).toFixed(2)"
@@ -481,6 +493,7 @@ export default {
       valid_until: '',
       terms: '',
       items: [{
+        selectedItemId: '',
         description: '',
         quantity: 1,
         unit_price: 0,
@@ -537,6 +550,7 @@ export default {
 
     const addItem = () => {
       newQuotation.value.items.push({
+        selectedItemId: '',
         description: '',
         quantity: 1,
         unit_price: 0,
@@ -546,6 +560,22 @@ export default {
 
     const removeItem = (index) => {
       newQuotation.value.items.splice(index, 1)
+    }
+
+    const updateItemFromList = (index) => {
+      const selectedItem = newQuotation.value.items[index]
+      const itemData = items.value.find(item => item.id === selectedItem.selectedItemId)
+      
+      if (itemData) {
+        selectedItem.description = itemData.name
+        selectedItem.unit_price = itemData.unit_price
+        updateItemTotal(index)
+      }
+    }
+
+    const updateItemTotal = (index) => {
+      const item = newQuotation.value.items[index]
+      item.total = (item.quantity || 0) * (item.unit_price || 0)
     }
 
     // Edit modal item functions
@@ -945,32 +975,7 @@ export default {
     return {
       quotations: computed(() => store.quotations),
       clients: computed(() => store.clients),
-      loading: computed(() => store.loading),
-      editingQuotation,
-      showAddModal,
-      showEditModal,
-      showViewModal,
-      viewQuotation,
-      selectedQuotations,
-      newQuotation,
-      openCreateModal,
-      openEditModal,
-      openViewModal,
-      closeAddModal,
-      closeEditModal,
-      closeViewModal,
-      handleAddQuotation,
-      handleEditQuotation,
-      sendEmail,
-      deleteQuotation,
-      showActions,
-      hideActions,
-      addItem,
-      removeItem,
-      addEditItem,
-      removeEditItem,
-      getStatusBadge,
-      // Phase 3: Advanced Features
+      items: computed(() => store.items || []),
       printQuotation,
       exportToPDF,
       shareQuotation,
@@ -1274,25 +1279,29 @@ export default {
 
 .item-inputs {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr;
+  grid-template-columns: 2fr 2fr 1fr 1fr 1fr;
   gap: 0.5rem;
   flex: 1;
 }
 
-.item-desc {
+.item-select {
   grid-column: 1;
 }
 
-.item-qty {
+.item-desc {
   grid-column: 2;
 }
 
-.item-price {
+.item-qty {
   grid-column: 3;
 }
 
-.item-total {
+.item-price {
   grid-column: 4;
+}
+
+.item-total {
+  grid-column: 5;
   background: rgba(59, 130, 246, 0.1);
   border-color: rgba(59, 130, 246, 0.2);
   color: #3b82f6;
@@ -1318,6 +1327,7 @@ export default {
     flex-direction: column;
   }
   
+  .item-select,
   .item-desc,
   .item-qty,
   .item-price,

@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Dashboard from '../views/Dashboard.vue'
 import Clients from '../views/Clients.vue'
 import Quotations from '../views/Quotations.vue'
+import Items from '../views/Items.vue'
 import Receipts from '../views/Receipts.vue'
 import Login from '../views/Login.vue'
 import { setAuthToken } from '../services/api'
@@ -11,6 +12,7 @@ const routes = [
     { path: '/dashboard', name: 'Dashboard', component: Dashboard },
     { path: '/clients', name: 'Clients', component: Clients },
     { path: '/quotations', name: 'Quotations', component: Quotations },
+    { path: '/items', name: 'Items', component: Items },
     { path: '/receipts', name: 'Receipts', component: Receipts },
     { path: '/login', redirect: '/' },
 ];

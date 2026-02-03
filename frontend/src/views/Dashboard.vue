@@ -68,6 +68,20 @@
           </div>
         </div>
       </div>
+
+      <div class="stat-card info">
+        <div class="stat-icon">
+          <i class="fas fa-box"></i>
+        </div>
+        <div class="stat-content">
+          <h3>Service Items</h3>
+          <div class="value">{{ items.length }}</div>
+          <div class="stat-change neutral">
+            <i class="fas fa-box"></i>
+            Available services
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Charts and Recent Activities -->
@@ -143,6 +157,15 @@
             <div class="action-content">
               <h4>Create Quotation</h4>
               <p>Generate new quotation</p>
+            </div>
+          </router-link>
+          <router-link to="/items" class="action-btn">
+            <div class="action-icon">
+              <i class="fas fa-box"></i>
+            </div>
+            <div class="action-content">
+              <h4>Add Item</h4>
+              <p>Create new service item</p>
             </div>
           </router-link>
           <router-link to="/receipts" class="action-btn">
@@ -360,6 +383,7 @@ export default {
       clients: computed(() => store.clients),
       quotations: computed(() => store.quotations),
       receipts: computed(() => store.receipts),
+      items: computed(() => store.items || []),
       totalRevenue,
       currentDate,
       newClientsThisMonth,
@@ -476,6 +500,7 @@ export default {
 .stat-card.secondary .stat-icon { background: rgba(59, 130, 246, 0.1); color: var(--accent-secondary); }
 .stat-card.success .stat-icon { background: rgba(16, 185, 129, 0.1); color: var(--success); }
 .stat-card.accent .stat-icon { background: rgba(236, 72, 153, 0.1); color: var(--accent-accent); }
+.stat-card.info .stat-icon { background: rgba(6, 182, 212, 0.1); color: #06b6d4; }
 
 .stat-content {
   flex: 1;

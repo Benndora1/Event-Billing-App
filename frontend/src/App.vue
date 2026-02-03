@@ -24,6 +24,12 @@
           </router-link>
         </li>
         <li>
+          <router-link to="/items" class="nav-link">
+            <span class="icon">📦</span>
+            Items
+          </router-link>
+        </li>
+        <li>
           <router-link to="/receipts" class="nav-link">
             <span class="icon">🧾</span>
             Receipts
