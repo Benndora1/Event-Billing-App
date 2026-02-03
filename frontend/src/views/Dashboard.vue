@@ -445,10 +445,14 @@ export default {
 
 /* Statistics Grid */
 .stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
+  display: flex;
+  gap: 1rem;
   margin-bottom: 2rem;
+}
+
+.stats-grid .stat-card {
+  flex: 1;
+  min-width: 0;
 }
 
 .stat-card {
@@ -858,7 +862,11 @@ export default {
   }
 
   .stats-grid {
-    grid-template-columns: 1fr;
+    flex-direction: column;
+  }
+  
+  .stats-grid .stat-card {
+    min-width: 100%;
   }
 
   .dashboard-grid {

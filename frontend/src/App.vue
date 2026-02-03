@@ -1,51 +1,59 @@
 <template>
   <div class="app">
-    <nav class="sidebar">
-      <div class="sidebar-header">
-        <h1>Event Billing</h1>
-      </div>
-      <ul class="sidebar-nav">
-        <li>
-          <router-link to="/" class="nav-link">
-            <span class="icon">📊</span>
-            Dashboard
-          </router-link>
-        </li>
-        <li>
-          <router-link to="/clients" class="nav-link">
-            <span class="icon">👥</span>
-            Clients
-          </router-link>
-        </li>
-        <li>
-          <router-link to="/quotations" class="nav-link">
-            <span class="icon">📝</span>
-            Quotations
-          </router-link>
-        </li>
-        <li>
-          <router-link to="/items" class="nav-link">
-            <span class="icon">📦</span>
-            Items
-          </router-link>
-        </li>
-        <li>
-          <router-link to="/receipts" class="nav-link">
-            <span class="icon">🧾</span>
-            Receipts
-          </router-link>
-        </li>
-      </ul>
-      <div class="sidebar-footer">
-        <button @click="handleLogout" class="logout-btn">
-          <i class="fas fa-sign-out-alt"></i>
-          Logout
-        </button>
-      </div>
-    </nav>
-    <main class="main-content">
+    <!-- Show full app layout only when logged in -->
+    <template v-if="$route.path !== '/'">
+      <nav class="sidebar">
+        <div class="sidebar-header">
+          <h1>Event Billing</h1>
+        </div>
+        <ul class="sidebar-nav">
+          <li>
+            <router-link to="/dashboard" class="nav-link">
+              <span class="icon">📊</span>
+              Dashboard
+            </router-link>
+          </li>
+          <li>
+            <router-link to="/clients" class="nav-link">
+              <span class="icon">👥</span>
+              Clients
+            </router-link>
+          </li>
+          <li>
+            <router-link to="/quotations" class="nav-link">
+              <span class="icon">📝</span>
+              Quotations
+            </router-link>
+          </li>
+          <li>
+            <router-link to="/items" class="nav-link">
+              <span class="icon">📦</span>
+              Items
+            </router-link>
+          </li>
+          <li>
+            <router-link to="/receipts" class="nav-link">
+              <span class="icon">🧾</span>
+              Receipts
+            </router-link>
+          </li>
+        </ul>
+        <div class="sidebar-footer">
+          <button @click="handleLogout" class="logout-btn">
+            <i class="fas fa-sign-out-alt"></i>
+            Logout
+          </button>
+        </div>
+      </nav>
+      <main class="main-content">
+        <router-view />
+      </main>
+    </template>
+    
+    <!-- Show only router-view for login page -->
+    <template v-else>
       <router-view />
-    </main>
+    </template>
   </div>
 </template>
 

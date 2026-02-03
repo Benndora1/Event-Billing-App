@@ -1,9 +1,13 @@
 <template>
-  <div>
+  <div class="clients-page">
     <!-- Page Header -->
     <div class="page-header">
-      <h2>Clients</h2>
-      <p>Manage your event company clients</p>
+      <div class="header-content">
+        <div>
+          <h2>Clients</h2>
+          <p>Manage your event company clients</p>
+        </div>
+      </div>
     </div>
 
     <!-- Card -->
@@ -558,5 +562,34 @@ export default {
     opacity: 1;
     transform: scale(1) translateY(0);
   }
+}
+
+.clients-page {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Page Header */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.page-header h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem 0;
+}
+
+.page-header p {
+  color: var(--text-secondary);
+  margin: 0;
+  font-size: 1.1rem;
 }
 </style>

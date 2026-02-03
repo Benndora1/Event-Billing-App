@@ -6,6 +6,7 @@ export const useAppStore = defineStore('app', {
         clients: [],
         quotations: [],
         receipts: [],
+        items: [],
         loading: false,
         error: null,
         lastFetched: null,
@@ -313,11 +314,80 @@ export const useAppStore = defineStore('app', {
             await this.fetchReceipts();
         },
 
+        // Items management
+        async fetchItems() {
+            try {
+                // Mock data for now - replace with actual API call
+                const mockItems = [
+                    { id: 1, name: 'Wedding Photography', description: 'Full day wedding photography coverage', unit_price: 1500, category: 'photography', status: 'active' },
+                    { id: 2, name: 'Videography Package', description: 'Professional video recording and editing', unit_price: 2000, category: 'videography', status: 'active' },
+                    { id: 3, name: 'Flower Decoration', description: 'Complete venue decoration with flowers', unit_price: 800, category: 'decoration', status: 'active' },
+                    { id: 4, name: 'Catering Service', description: 'Full catering for 100 guests', unit_price: 3000, category: 'catering', status: 'active' },
+                    { id: 5, name: 'DJ Entertainment', description: 'Professional DJ and sound system', unit_price: 1200, category: 'entertainment', status: 'active' }
+                ];
+                this.items = mockItems;
+            } catch (error) {
+                console.error('Error fetching items:', error);
+                this.error = 'Failed to fetch items';
+            }
+        },
+
+        async createItem(itemData) {
+            try {
+                // Mock create - replace with actual API call
+                const newItem = {
+                    id: Date.now(),
+                    ...itemData,
+                    created_at: new Date().toISOString()
+                };
+                this.items.push(newItem);
+                return newItem;
+            } catch (error) {
+                console.error('Error creating item:', error);
+                throw error;
+            }
+        },
+
+        async updateItem(itemId, itemData) {
+            try {
+                // Mock update - replace with actual API call
+                const index = this.items.findIndex(item => item.id === itemId);
+                if (index !== -1) {
+                    this.items[index] = { ...this.items[index], ...itemData };
+                    return this.items[index];
+                }
+                throw new Error('Item not found');
+            } catch (error) {
+                console.error('Error updating item:', error);
+                throw error;
+            }
+        },
+
+        async deleteItem(itemId) {
+            try {
+                // Mock delete - replace with actual API call
+                const index = this.items.findIndex(item => item.id === itemId);
+                if (index !== -1) {
+                    this.items.splice(index, 1);
+                    return true;
+                }
+                throw new Error('Item not found');
+            } catch (error) {
+                console.error('Error deleting item:', error);
+                throw error;
+            }
+        },
+
+        async refreshItems() {
+            await this.fetchItems();
+        },
+
         // Clear all data (only for logout)
         clearAllData() {
             this.clients = [];
             this.quotations = [];
             this.receipts = [];
+            this.items = [];
             this.loading = false;
             this.error = null;
             this.lastFetched = null;
@@ -336,6 +406,10 @@ export const useAppStore = defineStore('app', {
         
         getReceiptById: (state) => (id) => {
             return state.receipts.find(receipt => receipt.id === id);
+        },
+        
+        getItemById: (state) => (id) => {
+            return state.items.find(item => item.id === id);
         },
 
         getTotalRevenue: (state) => {

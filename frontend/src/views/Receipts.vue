@@ -1,8 +1,12 @@
 <template>
-  <div>
+  <div class="receipts-page">
     <div class="page-header">
-      <h2>Receipts</h2>
-      <p>Create and manage payment receipts</p>
+      <div class="header-content">
+        <div>
+          <h2>Receipts</h2>
+          <p>Create and manage payment receipts</p>
+        </div>
+      </div>
     </div>
 
     <div class="card">
@@ -599,5 +603,36 @@ export default {
     opacity: 1;
     transform: translateY(0);
   }
+}
+</style>
+
+<style scoped>
+.receipts-page {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Page Header */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.page-header h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem 0;
+}
+
+.page-header p {
+  color: var(--text-secondary);
+  margin: 0;
+  font-size: 1.1rem;
 }
 </style>

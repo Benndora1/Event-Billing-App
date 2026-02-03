@@ -1,23 +1,51 @@
 <template>
-  <div>
+  <div class="items-page">
     <div class="page-header">
       <div class="header-content">
         <div>
           <h2>Items</h2>
           <p>Manage your service items and pricing</p>
         </div>
-        <button @click="openCreateModal" class="btn btn-primary">
-          <i class="fas fa-plus"></i> Add Item
-        </button>
       </div>
     </div>
 
+    <!-- Categories Overview -->
+    <div class="categories-grid">
+      <div class="category-card" v-for="category in categories" :key="category.name">
+        <div class="category-header">
+          <div class="category-icon" :style="{ backgroundColor: category.color }">
+            <i :class="category.icon"></i>
+          </div>
+          <div class="category-info">
+            <h3>{{ category.name }}</h3>
+            <p>{{ category.count }} items</p>
+          </div>
+        </div>
+        <div class="category-stats">
+          <div class="stat">
+            <span class="label">Avg Price</span>
+            <span class="value">${{ category.avgPrice }}</span>
+          </div>
+          <div class="stat">
+            <span class="label">Total Value</span>
+            <span class="value">${{ category.totalValue }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Items Card -->
     <div class="card">
       <div class="card-header">
-        <h3>Items List</h3>
-        <button @click="refreshItems" class="btn btn-secondary">
-          <i class="fas fa-sync-alt"></i> Refresh
-        </button>
+        <h3>All Items ({{ items.length }})</h3>
+        <div class="header-actions">
+          <button @click="openCreateModal" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Add Item
+          </button>
+          <button @click="refreshItems" class="btn btn-secondary">
+            <i class="fas fa-sync-alt"></i> Refresh
+          </button>
+        </div>
       </div>
 
       <div v-if="loading" class="loading">Loading items...</div>
@@ -31,20 +59,37 @@
           <thead>
             <tr>
               <th>Name</th>
+              <th>Description</th>
               <th>Price</th>
               <th>Category</th>
+              <th>Status</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="item in items" :key="item.id" @click="openEditModal(item)" class="clickable-row">
+            <tr v-for="item in items" :key="item.id" class="clickable-row">
               <td><strong>{{ item.name }}</strong></td>
+              <td>{{ item.description || '-' }}</td>
               <td><strong>${{ item.unit_price }}</strong></td>
-              <td>{{ item.category }}</td>
+              <td>
+                <span class="category-badge" :style="{ backgroundColor: getCategoryColor(item.category) }">
+                  {{ item.category }}
+                </span>
+              </td>
+              <td>
+                <span :class="['badge', `badge-${getStatusBadge(item.status)}`]">
+                  {{ item.status }}
+                </span>
+              </td>
               <td @click.stop>
-                <button @click="deleteItem(item.id)" class="btn btn-sm btn-danger">
-                  <i class="fas fa-trash"></i>
-                </button>
+                <div class="table-actions">
+                  <button @click="openEditModal(item)" class="action-btn edit-btn" title="Edit">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button @click="deleteItem(item.id)" class="action-btn delete-btn" title="Delete">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -52,34 +97,51 @@
       </div>
     </div>
 
-    <!-- Modal -->
+    <!-- Create/Edit Item Modal -->
     <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
       <div class="modal">
         <div class="modal-header">
-          <h3>{{ editingItem ? 'Edit Item' : 'Add Item' }}</h3>
+          <h3>{{ editingItem ? 'Edit Item' : 'Add New Item' }}</h3>
           <button class="close-btn" @click="closeModal">×</button>
         </div>
         
         <form @submit.prevent="handleSubmit">
-          <div class="form-group">
-            <label>Name *</label>
-            <input v-model="formData.name" type="text" required class="form-input" />
-          </div>
-          
           <div class="form-row">
             <div class="form-group">
-              <label>Price *</label>
-              <input v-model="formData.unit_price" type="number" required min="0" step="0.01" class="form-input" />
+              <label>Item Name *</label>
+              <input v-model="formData.name" type="text" required placeholder="e.g., Wedding Photography" class="form-input" />
             </div>
             <div class="form-group">
-              <label>Category</label>
-              <select v-model="formData.category" class="form-input">
+              <label>Category *</label>
+              <select v-model="formData.category" required class="form-input">
                 <option value="">Select category</option>
                 <option value="photography">Photography</option>
                 <option value="videography">Videography</option>
                 <option value="decoration">Decoration</option>
                 <option value="catering">Catering</option>
+                <option value="entertainment">Entertainment</option>
+                <option value="venue">Venue</option>
+                <option value="transport">Transport</option>
                 <option value="other">Other</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label>Description</label>
+            <textarea v-model="formData.description" placeholder="Detailed description..." class="form-input" rows="3"></textarea>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label>Unit Price *</label>
+              <input v-model="formData.unit_price" type="number" required min="0" step="0.01" placeholder="0.00" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label>Status</label>
+              <select v-model="formData.status" class="form-input">
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
               </select>
             </div>
           </div>
@@ -87,7 +149,7 @@
           <div class="form-actions">
             <button type="button" class="btn btn-secondary" @click="closeModal">Cancel</button>
             <button type="submit" class="btn btn-primary" :disabled="loading">
-              {{ loading ? 'Saving...' : (editingItem ? 'Update' : 'Add') }}
+              {{ loading ? 'Saving...' : (editingItem ? 'Update Item' : 'Add Item') }}
             </button>
           </div>
         </form>
@@ -110,11 +172,77 @@ export default {
     
     const formData = ref({
       name: '',
+      description: '',
       unit_price: 0,
-      category: ''
+      category: '',
+      status: 'active'
     })
 
     const items = computed(() => store.items || [])
+
+    // Categories configuration
+    const categoryConfig = {
+      photography: { icon: 'fas fa-camera', color: '#3b82f6' },
+      videography: { icon: 'fas fa-video', color: '#8b5cf6' },
+      decoration: { icon: 'fas fa-palette', color: '#f59e0b' },
+      catering: { icon: 'fas fa-utensils', color: '#10b981' },
+      entertainment: { icon: 'fas fa-music', color: '#ef4444' },
+      venue: { icon: 'fas fa-building', color: '#6b7280' },
+      transport: { icon: 'fas fa-car', color: '#06b6d4' },
+      other: { icon: 'fas fa-box', color: '#8b5cf6' }
+    }
+
+    const categories = computed(() => {
+      const categoryStats = {}
+      
+      // Initialize categories
+      Object.keys(categoryConfig).forEach(cat => {
+        categoryStats[cat] = {
+          name: cat.charAt(0).toUpperCase() + cat.slice(1),
+          icon: categoryConfig[cat].icon,
+          color: categoryConfig[cat].color,
+          count: 0,
+          avgPrice: 0,
+          totalValue: 0,
+          items: []
+        }
+      })
+
+      // Calculate statistics
+      items.value.forEach(item => {
+        const category = item.category || 'other'
+        if (categoryStats[category]) {
+          categoryStats[category].count++
+          categoryStats[category].totalValue += parseFloat(item.unit_price || 0)
+          categoryStats[category].items.push(item)
+        }
+      })
+
+      // Calculate average prices
+      Object.keys(categoryStats).forEach(cat => {
+        if (categoryStats[cat].count > 0) {
+          categoryStats[cat].avgPrice = (categoryStats[cat].totalValue / categoryStats[cat].count).toFixed(2)
+        }
+        categoryStats[cat].totalValue = categoryStats[cat].totalValue.toFixed(2)
+      })
+
+      return Object.values(categoryStats).filter(cat => cat.count > 0)
+    })
+
+    const getCategoryColor = (category) => {
+      return categoryConfig[category]?.color || categoryConfig.other.color
+    }
+
+    const getStatusBadge = (status) => {
+      switch (status?.toLowerCase()) {
+        case 'active':
+          return 'success'
+        case 'inactive':
+          return 'danger'
+        default:
+          return 'secondary'
+      }
+    }
 
     const openCreateModal = () => {
       editingItem.value = null
@@ -135,7 +263,13 @@ export default {
     }
 
     const resetForm = () => {
-      formData.value = { name: '', unit_price: 0, category: '' }
+      formData.value = {
+        name: '',
+        description: '',
+        unit_price: 0,
+        category: '',
+        status: 'active'
+      }
     }
 
     const handleSubmit = async () => {
@@ -176,10 +310,13 @@ export default {
 
     return {
       items,
+      categories,
       loading,
       showModal,
       editingItem,
       formData,
+      getCategoryColor,
+      getStatusBadge,
       openCreateModal,
       openEditModal,
       closeModal,
@@ -192,6 +329,7 @@ export default {
 </script>
 
 <style scoped>
+/* Page Header */
 .page-header {
   display: flex;
   justify-content: space-between;
@@ -408,5 +546,136 @@ th {
 .btn-sm {
   padding: 0.5rem;
   font-size: 0.875rem;
+}
+
+/* Categories Grid */
+.categories-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.category-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.category-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+}
+
+.category-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.category-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.25rem;
+}
+
+.category-info h3 {
+  margin: 0 0 0.25rem 0;
+  color: var(--text-primary);
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.category-info p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.category-stats {
+  display: flex;
+  gap: 2rem;
+}
+
+.category-stats .stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.category-stats .label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.category-stats .value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .categories-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .category-stats {
+    gap: 1rem;
+  }
+  
+  .card-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .header-actions {
+    justify-content: center;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+
+<style scoped>
+.items-page {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Page Header */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.page-header h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem 0;
+}
+
+.page-header p {
+  color: var(--text-secondary);
+  margin: 0;
+  font-size: 1.1rem;
 }
 </style>
