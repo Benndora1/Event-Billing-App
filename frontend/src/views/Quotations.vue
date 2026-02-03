@@ -92,124 +92,105 @@
 
     <!-- Custom Add Quotation Modal -->
     <div v-if="showAddModal" class="custom-modal-overlay" @click.self="closeAddModal">
-      <div class="custom-modal">
+      <div class="custom-modal compact-modal">
         <div class="modal-header">
-          <h3>Create New Quotation</h3>
+          <h3>Create Quotation</h3>
           <button class="close-btn" @click="closeAddModal">
             <i class="fas fa-times"></i>
           </button>
         </div>
         
-        <form @submit.prevent="handleAddQuotation" class="add-quotation-form">
-          <div class="form-section">
-            <h4>Quotation Details</h4>
-            <div class="form-grid">
-              <div class="form-group">
-                <label for="client">Client *</label>
-                <select
-                  id="client"
-                  v-model="newQuotation.client_id"
-                  required
-                  class="form-input"
-                >
-                  <option value="">Select a client</option>
-                  <option v-for="client in clients" :key="client.id" :value="client.id">
-                    {{ client.name }}{{ client.company ? ` - ${client.company}` : '' }}
-                  </option>
-                </select>
-              </div>
-              
-              <div class="form-group">
-                <label for="valid_until">Valid Until *</label>
-                <input
-                  id="valid_until"
-                  v-model="newQuotation.valid_until"
-                  type="date"
-                  required
-                  class="form-input"
-                />
-              </div>
+        <form @submit.prevent="handleAddQuotation" class="compact-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="client">Client *</label>
+              <select
+                id="client"
+                v-model="newQuotation.client_id"
+                required
+                class="form-input"
+              >
+                <option value="">Select a client</option>
+                <option v-for="client in clients" :key="client.id" :value="client.id">
+                  {{ client.name }}{{ client.company ? ` - ${client.company}` : '' }}
+                </option>
+              </select>
             </div>
             
-            <div class="form-group full-width">
-              <label for="terms">Terms</label>
-              <textarea
-                id="terms"
-                v-model="newQuotation.terms"
-                placeholder="Payment terms and conditions..."
+            <div class="form-group">
+              <label for="valid-until">Valid Until *</label>
+              <input
+                id="valid-until"
+                v-model="newQuotation.valid_until"
+                type="date"
+                required
                 class="form-input"
-                rows="3"
-              ></textarea>
+              />
             </div>
           </div>
           
-          <div class="form-section">
-            <h4>Items</h4>
-            <div class="items-section">
-              <div v-for="(item, index) in newQuotation.items" :key="index" class="item-row">
-                <div class="form-group">
-                  <label>Item Description *</label>
+          <div class="form-group">
+            <label for="terms">Terms</label>
+            <textarea
+              id="terms"
+              v-model="newQuotation.terms"
+              placeholder="Payment terms and conditions..."
+              class="form-input"
+              rows="2"
+            ></textarea>
+          </div>
+          
+          <div class="items-section">
+            <div class="section-header">
+              <h4>Items</h4>
+              <button type="button" @click="addItem" class="btn btn-sm btn-secondary">
+                <i class="fas fa-plus"></i> Add Item
+              </button>
+            </div>
+            
+            <div class="compact-items">
+              <div v-for="(item, index) in newQuotation.items" :key="index" class="compact-item-row">
+                <div class="item-inputs">
                   <input
                     v-model="item.description"
                     type="text"
                     required
                     placeholder="Item description"
-                    class="form-input"
+                    class="form-input item-desc"
                   />
-                </div>
-                
-                <div class="form-group">
-                  <label>Quantity *</label>
                   <input
                     v-model="item.quantity"
                     type="number"
                     required
                     min="1"
-                    placeholder="1"
-                    class="form-input"
+                    placeholder="Qty"
+                    class="form-input item-qty"
                   />
-                </div>
-                
-                <div class="form-group">
-                  <label>Unit Price *</label>
                   <input
                     v-model="item.unit_price"
                     type="number"
                     required
                     min="0"
                     step="0.01"
-                    placeholder="0.00"
-                    class="form-input"
+                    placeholder="Price"
+                    class="form-input item-price"
                   />
-                </div>
-                
-                <div class="form-group">
-                  <label>Total</label>
                   <input
                     :value="(item.quantity * item.unit_price).toFixed(2)"
                     type="text"
                     readonly
-                    class="form-input readonly"
+                    class="form-input item-total"
                   />
                 </div>
-                
                 <button
                   v-if="newQuotation.items.length > 1"
                   type="button"
                   @click="removeItem(index)"
-                  class="btn btn-danger btn-sm"
+                  class="btn btn-sm btn-danger"
                 >
-                  <i class="fas fa-trash"></i> Remove
+                  <i class="fas fa-trash"></i>
                 </button>
               </div>
-              
-              <button
-                type="button"
-                @click="addItem"
-                class="btn btn-secondary"
-              >
-                <i class="fas fa-plus"></i> Add Item
-              </button>
             </div>
           </div>
           
@@ -802,7 +783,8 @@ export default {
     }
 
     const getSelectedQuotationsData = () => {
-      return quotations.value.filter(q => selectedQuotations.value.includes(q.id))
+     // return quotations.value.filter(q => selectedQuotations.value.includes(q.id))
+     return store.quotations.filter(q => selectedQuotations.value.includes(q.id))
     }
 
     // New header action functions for selected quotations
@@ -1241,6 +1223,107 @@ export default {
   max-width: 600px;
   color: var(--text-primary);
   border-color: rgba(255, 255, 255, 0.2);
+}
+
+.compact-modal {
+  max-width: 700px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.compact-form {
+  padding: 1.5rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.section-header h4 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.compact-items {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.compact-item-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+  padding: 0.75rem;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.item-inputs {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.item-desc {
+  grid-column: 1;
+}
+
+.item-qty {
+  grid-column: 2;
+}
+
+.item-price {
+  grid-column: 3;
+}
+
+.item-total {
+  grid-column: 4;
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+/* Responsive compact modal */
+@media (max-width: 768px) {
+  .compact-modal {
+    max-width: 95%;
+    margin: 1rem;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .item-inputs {
+    grid-template-columns: 1fr;
+  }
+  
+  .compact-item-row {
+    flex-direction: column;
+  }
+  
+  .item-desc,
+  .item-qty,
+  .item-price,
+  .item-total {
+    grid-column: 1;
+  }
 }
 
 /* Card Styles */
