@@ -387,6 +387,7 @@ const register = async () => {
   max-width: 500px;
   margin: 0 auto;
   width: 100%;
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-tertiary) 100%);
 }
 
 .form-toggle {
@@ -404,10 +405,14 @@ const register = async () => {
   border: none;
   background: transparent;
   color: var(--text-secondary);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   cursor: pointer;
   transition: all 0.3s ease;
   font-weight: 600;
+  font-size: 0.875rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .toggle-btn.active {
@@ -477,17 +482,23 @@ const register = async () => {
 .btn-primary {
   background: var(--gradient-primary);
   color: white;
+  box-shadow: var(--shadow-md);
+  padding: 0.75rem 1.5rem;
+  font-size: 0.875rem;
+  margin-top: 1rem;
   border: none;
-  padding: 1rem 2rem;
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: all 0.3s ease;
   font-weight: 600;
-  font-size: 1rem;
-  margin-top: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  text-decoration: none;
 }
 
-.btn-primary:hover:not(:disabled) {
+.btn-primary:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg), var(--shadow-glow);
 }

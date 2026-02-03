@@ -7,14 +7,14 @@
 }
 
 :root {
-  /* Colors - Dark Blue Sidebar with Light Background */
+  /* Colors - White-Based Theme with Navy Blue Accent */
   --bg-primary: #f5f5f5;      /* Light gray background */
   --bg-secondary: #ffffff;    /* White cards */
   --bg-tertiary: #fafafa;     /* Lighter gray for hover */
   --text-primary: #1e293b;
   --text-secondary: #64748b;
-  --accent-primary: #1c345c;  /* Dark blue from your list */
-  --accent-secondary: #66a6ff; /* Lighter blue variant */
+  --accent-primary: #1c345c;  /* Navy blue from your list */
+  --accent-secondary: #2563eb; /* Lighter blue variant */
   --success: #10b981;
   --warning: #f59e0b;
   --danger: #ef4444;
@@ -24,8 +24,8 @@
   --border-hover: #cbd5e1;
   
   /* Gradients */
-  --gradient-primary: linear-gradient(135deg, #4285f4 0%, #66a6ff 100%);
-  --gradient-card: linear-gradient(135deg, rgba(66, 133, 244, 0.05) 0%, rgba(102, 166, 255, 0.02) 100%);
+  --gradient-primary: linear-gradient(135deg, #1c345c 0%, #2563eb 100%);
+  --gradient-card: linear-gradient(135deg, rgba(28, 52, 92, 0.05) 0%, rgba(37, 99, 235, 0.02) 100%);
   --gradient-danger: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   
   /* Spacing */
@@ -44,7 +44,7 @@
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
-  --shadow-glow: 0 0 20px rgba(66, 133, 244, 0.2);
+  --shadow-glow: 0 0 20px rgba(28, 52, 92, 0.2);
   --shadow-glow-danger: 0 0 20px rgba(239, 68, 68, 0.2);
 }
 
