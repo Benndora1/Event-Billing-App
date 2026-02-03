@@ -6,15 +6,35 @@
           <h2>Quotations</h2>
           <p>Create and manage event quotations</p>
         </div>
-        <button @click="openCreateModal" class="btn btn-primary header-btn">
+        <!-- <button @click="openCreateModal" class="btn btn-primary header-btn">
           <i class="fas fa-plus"></i> Create Quotation
-        </button>
+        </button> -->
       </div>
     </div>
 
     <div class="card">
       <div class="card-header">
         <h3>Quotation List</h3>
+        <div class="header-actions">
+          <button @click="openCreateModal" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Create Quotation
+          </button>
+          <button @click="refreshAllData" class="btn btn-secondary">
+            <i class="fas fa-sync-alt"></i> Refresh
+          </button>
+          <button @click="printSelectedQuotations" class="btn btn-outline">
+            <i class="fas fa-print"></i> Print Selected
+          </button>
+          <button @click="downloadSelectedPDFs" class="btn btn-outline">
+            <i class="fas fa-file-pdf"></i> Download PDFs
+          </button>
+          <button @click="shareSelectedQuotations" class="btn btn-outline">
+            <i class="fas fa-share"></i> Share Selected
+          </button>
+          <button @click="exportAllQuotations" class="btn btn-outline">
+            <i class="fas fa-download"></i> Export All
+          </button>
+        </div>
       </div>
 
       <div v-if="loading" class="loading">Loading quotations...</div>
@@ -28,13 +48,13 @@
         <table>
           <thead>
             <tr>
+              <th>Select</th>
               <th>Number</th>
               <th>Client</th>
               <th>Date</th>
               <th>Valid Until</th>
               <th>Total</th>
               <th>Status</th>
-              <th>Actions</th>
             </tr>
           </thead>
 
@@ -42,10 +62,18 @@
             <tr 
               v-for="quotation in quotations" 
               :key="quotation.id"
-              :class="{ 'active-row': editingQuotation?.id === quotation.id }"
+              :class="{ 'active-row': editingQuotation?.id === quotation.id, 'selected-row': selectedQuotations.includes(quotation.id) }"
               @click="openEditModal(quotation)"
               class="clickable-row"
             >
+              <td @click.stop>
+                <input 
+                  type="checkbox" 
+                  :checked="selectedQuotations.includes(quotation.id)"
+                  @change="toggleQuotationSelection(quotation.id)"
+                  class="quotation-checkbox"
+                />
+              </td>
               <td><strong>{{ quotation.quotation_number }}</strong></td>
               <td>{{ quotation.client_name }}</td>
               <td>{{ quotation.date }}</td>
@@ -55,60 +83,6 @@
                 <span :class="['badge', `badge-${getStatusBadge(quotation.status)}`]">
                   {{ quotation.status }}
                 </span>
-              </td>
-              <td>
-                <!-- Action buttons in table cell -->
-                <div class="table-actions">
-                  <button 
-                    @click.stop="openViewModal(quotation)" 
-                    class="action-btn view-btn" 
-                    title="View Details"
-                  >
-                    <i class="fas fa-eye"></i>
-                  </button>
-                  <button 
-                    @click.stop="openEditModal(quotation)" 
-                    class="action-btn edit-btn" 
-                    title="Edit"
-                  >
-                    <i class="fas fa-edit"></i>
-                  </button>
-                  <button 
-                    @click.stop="printQuotationDirect(quotation)" 
-                    class="action-btn print-btn" 
-                    title="Print"
-                  >
-                    <i class="fas fa-print"></i>
-                  </button>
-                  <button 
-                    @click.stop="sendEmail(quotation.id)" 
-                    class="action-btn email-btn" 
-                    title="Send Email"
-                  >
-                    <i class="fas fa-envelope"></i>
-                  </button>
-                  <button 
-                    @click.stop="shareQuotationDirect(quotation)" 
-                    class="action-btn share-btn" 
-                    title="Share"
-                  >
-                    <i class="fas fa-share"></i>
-                  </button>
-                  <button 
-                    @click.stop="exportToPDFDirect(quotation)" 
-                    class="action-btn pdf-btn" 
-                    title="Export PDF"
-                  >
-                    <i class="fas fa-file-pdf"></i>
-                  </button>
-                  <button 
-                    @click.stop="deleteQuotation(quotation.id)" 
-                    class="action-btn delete-btn" 
-                    title="Delete"
-                  >
-                    <i class="fas fa-trash"></i>
-                  </button>
-                </div>
               </td>
             </tr>
           </tbody>
@@ -520,6 +494,7 @@ export default {
     const showEditModal = ref(false)
     const showViewModal = ref(false)
     const viewQuotation = ref(null)
+    const selectedQuotations = ref([])
     const newQuotation = ref({
       client_id: '',
       valid_until: '',
@@ -678,6 +653,8 @@ export default {
           return 'success'
         case 'rejected':
           return 'danger'
+        case 'converted':
+          return 'secondary'
         default:
           return 'secondary'
       }
@@ -728,6 +705,160 @@ export default {
 
     const exportToPDFDirect = async (quotation) => {
       alert('PDF export feature would be implemented here with a library like jsPDF')
+    }
+
+    // Convert quotation to receipt
+    const convertToReceipt = async (quotation) => {
+      if (!confirm(`Are you sure you want to convert quotation #${quotation.quotation_number} to a receipt?`)) {
+        return
+      }
+
+      try {
+        // Create receipt data from quotation
+        const receiptData = {
+          client_id: quotation.client_id,
+          client_name: quotation.client_name,
+          client_email: quotation.client_email,
+          client_phone: quotation.client_phone,
+          date: new Date().toISOString().split('T')[0], // Today's date
+          quotation_number: quotation.quotation_number,
+          items: quotation.items || [],
+          total: quotation.total,
+          terms: quotation.terms || '',
+          status: 'paid', // Default to paid since it's converted from quote
+          notes: `Converted from quotation #${quotation.quotation_number}`
+        }
+
+        // Create the receipt
+        await store.createReceipt(receiptData)
+        
+        // Update quotation status to 'converted'
+        await store.updateQuotation(quotation.id, { ...quotation, status: 'converted' })
+        
+        alert(`Successfully converted quotation #${quotation.quotation_number} to a receipt!`)
+        
+        // Refresh data
+        store.refreshQuotations()
+        store.refreshReceipts()
+        
+      } catch (error) {
+        console.error('Error converting quotation to receipt:', error)
+        alert('Failed to convert quotation to receipt. Please try again.')
+      }
+    }
+
+    // Header action functions
+    const refreshAllData = async () => {
+      try {
+        await store.refreshQuotations()
+        alert('Quotations refreshed successfully!')
+      } catch (error) {
+        console.error('Error refreshing quotations:', error)
+        alert('Failed to refresh quotations. Please try again.')
+      }
+    }
+
+    const exportAllQuotations = async () => {
+      try {
+        // Create CSV content
+        const headers = ['Quotation Number', 'Client', 'Date', 'Valid Until', 'Total', 'Status']
+        const rows = quotations.value.map(q => [
+          q.quotation_number,
+          q.client_name,
+          q.date,
+          q.valid_until,
+          q.total,
+          q.status
+        ])
+        
+        const csvContent = [headers, ...rows]
+          .map(row => row.map(cell => `"${cell}"`).join(','))
+          .join('\n')
+        
+        // Create and download file
+        const blob = new Blob([csvContent], { type: 'text/csv' })
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `quotations_${new Date().toISOString().split('T')[0]}.csv`
+        a.click()
+        window.URL.revokeObjectURL(url)
+        
+        alert('Quotations exported successfully!')
+      } catch (error) {
+        console.error('Error exporting quotations:', error)
+        alert('Failed to export quotations. Please try again.')
+      }
+    }
+
+    // Selection functions
+    const toggleQuotationSelection = (quotationId) => {
+      const index = selectedQuotations.value.indexOf(quotationId)
+      if (index > -1) {
+        selectedQuotations.value.splice(index, 1)
+      } else {
+        selectedQuotations.value.push(quotationId)
+      }
+    }
+
+    const getSelectedQuotationsData = () => {
+      return quotations.value.filter(q => selectedQuotations.value.includes(q.id))
+    }
+
+    // New header action functions for selected quotations
+    const printSelectedQuotations = () => {
+      const selected = getSelectedQuotationsData()
+      if (selected.length === 0) {
+        alert('Please select at least one quotation to print.')
+        return
+      }
+
+      selected.forEach(quotation => {
+        const printWindow = window.open('', '_blank')
+        const quotationContent = generatePrintContent(quotation)
+        printWindow.document.write(quotationContent)
+        printWindow.document.close()
+        printWindow.print()
+      })
+    }
+
+    const downloadSelectedPDFs = async () => {
+      const selected = getSelectedQuotationsData()
+      if (selected.length === 0) {
+        alert('Please select at least one quotation to download as PDF.')
+        return
+      }
+
+      alert(`PDF download feature would be implemented here for ${selected.length} quotation(s). This would use a library like jsPDF to generate professional PDF documents.`)
+    }
+
+    const shareSelectedQuotations = async () => {
+      const selected = getSelectedQuotationsData()
+      if (selected.length === 0) {
+        alert('Please select at least one quotation to share.')
+        return
+      }
+
+      const shareUrls = selected.map(q => `${window.location.origin}/quotations/${q.id}`)
+      const shareText = `View ${selected.length} quotation(s):\n${shareUrls.join('\n')}`
+
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: `${selected.length} Quotation(s)`,
+            text: shareText
+          })
+        } catch (error) {
+          console.log('Share cancelled')
+        }
+      } else {
+        try {
+          await navigator.clipboard.writeText(shareText)
+          alert(`Links to ${selected.length} quotation(s) copied to clipboard!`)
+        } catch (error) {
+          alert('Could not copy links')
+        }
+      }
     }
 
     const generatePrintContent = (quotation) => {
@@ -838,6 +969,7 @@ export default {
       showEditModal,
       showViewModal,
       viewQuotation,
+      selectedQuotations,
       newQuotation,
       openCreateModal,
       openEditModal,
@@ -864,6 +996,17 @@ export default {
       printQuotationDirect,
       shareQuotationDirect,
       exportToPDFDirect,
+      convertToReceipt,
+      // Header action functions
+      refreshAllData,
+      exportAllQuotations,
+      // Selection functions
+      toggleQuotationSelection,
+      getSelectedQuotationsData,
+      // Selected quotation actions
+      printSelectedQuotations,
+      downloadSelectedPDFs,
+      shareSelectedQuotations,
     }
   },
 }
@@ -873,6 +1016,22 @@ export default {
 .clickable-row {
   cursor: pointer;
   transition: background-color 0.2s ease;
+}
+
+.clickable-row:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.selected-row {
+  background-color: rgba(34, 197, 94, 0.1);
+  border-left: 3px solid #22c55e;
+}
+
+.quotation-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--accent-primary);
 }
 
 .clickable-row:hover {
@@ -1041,6 +1200,12 @@ export default {
   color: #dc2626;
 }
 
+.table-actions .convert-btn:hover {
+  background: rgba(34, 197, 94, 0.1);
+  border-color: rgba(34, 197, 94, 0.3);
+  color: #22c55e;
+}
+
 .table-actions .delete-btn:hover {
   background: rgba(239, 68, 68, 0.1);
   border-color: rgba(239, 68, 68, 0.3);
@@ -1074,40 +1239,117 @@ export default {
   border-radius: 12px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   max-width: 600px;
-  width: 100%;
-  max-height: 90vh;
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Card Styles */
+.card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  animation: modalSlideIn 0.3s ease-out;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
 }
 
-.custom-modal .modal-header {
+/* Card Header with Actions */
+.card-header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
   padding: 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
-.custom-modal .modal-header h3 {
+.card-header h3 {
   margin: 0;
   color: var(--text-primary);
   font-size: 1.25rem;
   font-weight: 600;
 }
 
-.close-btn {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
-  color: var(--text-secondary);
-  cursor: pointer;
-  padding: 0.5rem;
+.header-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.header-actions .btn {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
   transition: all 0.2s ease;
+  border: 1px solid transparent;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.header-actions .btn i {
+  font-size: 0.875rem;
+}
+
+.header-actions .btn-primary {
+  background: var(--accent-primary);
+  color: white;
+  border-color: var(--accent-primary);
+}
+
+.header-actions .btn-primary:hover {
+  background: var(--accent-secondary);
+  border-color: var(--accent-secondary);
+  transform: translateY(-1px);
+}
+
+.header-actions .btn-secondary {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.header-actions .btn-secondary:hover {
+  background: var(--bg-primary);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.header-actions .btn-outline {
+  background: transparent;
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.header-actions .btn-outline:hover {
+  background: var(--bg-secondary);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+/* Responsive Card Header */
+@media (max-width: 768px) {
+  .card-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  
+  .header-actions {
+    justify-content: center;
+  }
+  
+  .header-actions .btn {
+    flex: 1;
+    justify-content: center;
+    min-width: 0;
+  }
 }
 
 .close-btn:hover {
